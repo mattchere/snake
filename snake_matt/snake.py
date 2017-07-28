@@ -1,3 +1,4 @@
+from collections import deque
 import random
 import pygame
 from pygame.locals import *
@@ -14,8 +15,8 @@ class Node:
         self.next = None
         self.last = None
         self.curr = None
-        self.speed = 5
-        self.rect = Rect((self.posx, self.posy, 5, 5))
+        self.speed = 12
+        self.rect = Rect((self.posx, self.posy, 12, 12))
 
     def move(self, direction):
         self.last = self.curr
@@ -41,7 +42,7 @@ class Node:
         elif self.curr == "DOWN":
             self.posy += self.speed
 
-        self.rect = Rect((self.posx, self.posy, 5, 5))
+        self.rect = Rect((self.posx, self.posy, 12, 12))
 
         if self.next is not None:
             self.next.move_body()
@@ -51,17 +52,15 @@ class Node:
         node = self
         for i in range(size-1):
             node = node.next
-        if node.next is None:
-            if node.curr == "LEFT":
-                node.next = Node(node.posx+5, node.posy, node)
-            elif node.curr == "RIGHT":
-                node.next = Node(node.posx-5, node.posy, node)
-            elif node.curr == "UP":
-                node.next = Node(node.posx, node.posy+5, node)
-            elif node.curr == "DOWN":
-                node.next = Node(node.posx, node.posy-5, node)
-        else:
-            print("Error")
+
+        if node.curr == "LEFT":
+            node.next = Node(node.posx+12, node.posy, node)
+        elif node.curr == "RIGHT":
+            node.next = Node(node.posx-12, node.posy, node)
+        elif node.curr == "UP":
+            node.next = Node(node.posx, node.posy+12, node)
+        elif node.curr == "DOWN":
+            node.next = Node(node.posx, node.posy-12, node)
 
 
 class Food:
@@ -79,17 +78,41 @@ def draw_snake(node, display):
         draw_snake(node.next, display)
 
 def tail_collide(head):
-    node = head.next
+    node = head
     while node.next is not None:
-        if head.rect.colliderect(node):
-            print("Hit")
         node = node.next
+        if head.rect.colliderect(node.rect):
+            return True
     return False
+
+def show_quit(screen):
+    # Fill background
+    background = pygame.Surface(screen.get_size())
+    background = background.convert()
+    background.fill((0, 0, 0))
+
+    # Display some text
+    font = pygame.font.Font(None, 60)
+    text = font.render("Game Over", 1, (255, 255, 255))
+    textpos = text.get_rect()
+    textpos.centerx = background.get_rect().centerx
+    textpos.centery = background.get_rect().centery
+    background.blit(text, textpos)
+
+    font = pygame.font.Font(None, 35)
+    text = font.render("Press q to quit, or c to continue", 1, (255, 255, 255))
+    textpos = text.get_rect()
+    textpos.centerx = background.get_rect().centerx
+    textpos.centery = background.get_rect().centery + 80
+    background.blit(text, textpos)
+
+    screen.blit(background, (0,0))
 
 
 def main():
     # Initialise screen
     pygame.init()
+    FPSCLOCK = pygame.time.Clock()
     screen = pygame.display.set_mode((WINDOWWIDTH, WINDOWHEIGHT))
     pygame.display.set_caption('Snake')
 
@@ -99,21 +122,20 @@ def main():
     background.fill((250, 250, 250))
 
     # Initialise the snake and food
-    snake = Node(20, 20, None)
-    node = snake
-    length = 30
-    for i in range(length):
-        node.next = Node(20, 20, node)
-        node = node.next
+    snake = Node(background.get_rect().centerx, background.get_rect().centery, None)
+    length = 1
     food = Food()
 
     # Blit everything to the screen
     screen.blit(background, (0, 0))
+    draw_snake(snake, screen)
+    pygame.draw.rect(screen, (0, 0, 0), food.rect)
     pygame.display.update()
-    direction = "RIGHT"
+
+    # Set up local variables
+    start = False
     end = False
-    length += 1
-    time = 0
+    direction = None
 
     # Event loop
     while True:
@@ -121,29 +143,45 @@ def main():
             if event.type == QUIT:
                 return
             if event.type == KEYDOWN:
+                start = True
                 if event.key == K_LEFT:
-                    direction = "LEFT"
+                    if direction != "RIGHT":
+                        direction = "LEFT"
                 if event.key == K_RIGHT:
-                    direction = "RIGHT"
+                    if direction != "LEFT":
+                        direction = "RIGHT"
                 if event.key == K_UP:
-                    direction = "UP"
+                    if direction != "DOWN":
+                        direction = "UP"
                 if event.key == K_DOWN:
-                    direction = "DOWN"
-
-        end = snake.move(direction)
-        screen.blit(background, (0, 0))
-        draw_snake(snake, screen)
-        pygame.draw.rect(screen, (0, 0, 0), food.rect)
+                    if direction != "UP":
+                        direction = "DOWN"
+                if end:
+                    if event.key == K_q:
+                        return
+                    if event.key == K_c:
+                        snake = Node(background.get_rect().centerx, background.get_rect().centery, None)
+                        length = 1
+                        food = Food()
+                        direction = None
+                        end = False
+        if not end and start:
+            end = snake.move(direction)
+            if snake.rect.colliderect(food):
+                food = Food()
+                snake.collide(length)
+                length += 1
+            if tail_collide(snake):
+                end = True
+                print("hit")
+            screen.blit(background, (0, 0))
+            draw_snake(snake, screen)
+            pygame.draw.rect(screen, (0, 0, 0), food.rect)
+        elif end:
+            start = False
+            show_quit(screen)
         pygame.display.update()
-        if end:
-            return
-        if snake.rect.colliderect(food):
-            food = Food()
-            snake.collide(length)
-            length += 1
-        if tail_collide(snake) and time > length:
-            return
-        time += 1
+        FPSCLOCK.tick(15)
 
 if __name__ == '__main__':
     main()
