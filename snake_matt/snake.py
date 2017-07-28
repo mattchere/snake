@@ -1,4 +1,3 @@
-from collections import deque
 import random
 import pygame
 from pygame.locals import *
