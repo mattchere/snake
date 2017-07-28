@@ -16,31 +16,38 @@ pygame.display.set_caption('Snake')
 
 clock = pygame.time.Clock()
 
+
 # DISPLAY TEXT
 fontLarge = pygame.font.SysFont(None, 60)
 fontSmall = pygame.font.SysFont(None, 25)
-def message_display(size, msg, colour, x, y):
+def message_display(size, msg, colour, centerX, centerY):
     if size == "large":
-        text = fontLarge.render(msg, True, colour)
+        textSurf = fontLarge.render(msg, True, colour)
+        textRect = textSurf.get_rect()
     elif size == "small":
-        text = fontSmall.render(msg, True, colour)
-    gameDisplay.blit(text, [x, y])
+        textSurf = fontSmall.render(msg, True, colour)
+        textRect = textSurf.get_rect()
+    textRect.center = centerX, centerY
+    gameDisplay.blit(textSurf,textRect)
+
 
 def generateFood():
     foodX = random.randrange(0,displayWidth-blockSize, blockSize)
     foodY = random.randrange(0,displayHeight-blockSize, blockSize)
-    large = 0
+    size = 1
     if random.randrange(0,9) == 0:
-        large = 1
+        size = 3
         if foodX > displayWidth-blockSize*3:
             foodX = displayWidth-blockSize*3
         if foodY > displayHeight-blockSize*3:
             foodY = displayHeight-blockSize*3
-    return foodX, foodY, large
+    foodRect = Rect(foodX, foodY, blockSize*size, blockSize*size)
+    return foodRect
+
 
 def snake(snakeList,blockSize):
     for position in snakeList:
-        pygame.draw.rect(gameDisplay, black, [position[0],position[1],blockSize,blockSize])
+        pygame.draw.rect(gameDisplay, white, [position[0],position[1],blockSize,blockSize])
 
 # GAME LOOP
 def gameLoop():
@@ -55,11 +62,11 @@ def gameLoop():
     headY_change = 0
 
     while not gameExit:
-        gameDisplay.fill(white)
+        gameDisplay.fill(black)
 
         # MAKE FOOD
         if eaten:
-            foodX, foodY, largeFood = generateFood()
+            foodRect = generateFood()
             eaten = False
 
         # GAME OVER LOOP
@@ -68,7 +75,7 @@ def gameLoop():
             # GAME OVER MESSAGE
             gameDisplay.fill(black)
             message_display("large", "GAME OVER", white, displayWidth/2, displayHeight/2)
-            message_display("small", "Q: Quit    C: Play Again", white, displayWidth/2, displayHeight*2/3)
+            message_display("small", "Q: Quit    C: Play Again", white, displayWidth/2, displayHeight*4/7)
             pygame.display.update()
 
             # QUIT / PLAY AGAIN
@@ -79,6 +86,9 @@ def gameLoop():
                         gameOver = False
                     if event.key == K_c:
                         gameLoop()
+                if event.type == QUIT:
+                    gameExit = True
+                    gameOver = False
             
         # PLAYER MOVEMENT
         for event in pygame.event.get():
@@ -101,15 +111,6 @@ def gameLoop():
                     if headY_change >= 0:
                         headX_change = 0
                         headY_change = blockSize
-                        
-            """
-            # Stop when key is lifted
-            direction = [K_RIGHT, K_LEFT, K_UP, K_DOWN]
-            if event.type == KEYUP:
-                if event.key in direction:
-                    headY_change = 0
-                    headX_change = 0
-            """
 
         headX += headX_change
         headY += headY_change
@@ -121,23 +122,21 @@ def gameLoop():
         snakeHead = [headX,headY]
         if snakeHead in snakeList:
             gameOver = True
-        snakeList.append(snakeHead)
 
+        # SNAKE MOVEMENT    
+        snakeList.append(snakeHead)
         snake(snakeList,blockSize)
         del snakeList[0]
 
-        foodSize = blockSize
-        if largeFood:
-            foodSize = blockSize*3
-
-        pygame.draw.rect(gameDisplay, red, [foodX,foodY,foodSize,foodSize]) # draw apple
-        pygame.display.update()
-    
+        snakeHeadRect = pygame.Rect(headX, headY, blockSize, blockSize)
+        pygame.draw.rect(gameDisplay, red, foodRect)
+        
         # EAT FOOD
-        if headX == foodX and headY == foodY:
+        if snakeHeadRect.colliderect(foodRect):
             eaten = True
             snakeList.append(snakeHead)
 
+        pygame.display.update()
         clock.tick(10)
 
     pygame.quit()
