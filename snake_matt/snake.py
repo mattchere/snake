@@ -74,7 +74,7 @@ class Food:
 
 def draw_snake(node, display):
     if node is not None:
-        pygame.draw.rect(display, (0, 0, 0), node.rect)
+        pygame.draw.rect(display, (255, 255, 255), node.rect)
         draw_snake(node.next, display)
 
 def tail_collide(head):
@@ -100,7 +100,7 @@ def show_quit(screen):
     background.blit(text, textpos)
 
     font = pygame.font.Font(None, 35)
-    text = font.render("Press q to quit, or c to continue", 1, (255, 255, 255))
+    text = font.render("Press q to quit, or p to play again", 1, (255, 255, 255))
     textpos = text.get_rect()
     textpos.centerx = background.get_rect().centerx
     textpos.centery = background.get_rect().centery + 80
@@ -119,7 +119,7 @@ def main():
     # Fill background
     background = pygame.Surface(screen.get_size())
     background = background.convert()
-    background.fill((250, 250, 250))
+    background.fill((0, 0, 0))
 
     # Initialise the snake and food
     snake = Node(background.get_rect().centerx, background.get_rect().centery, None)
@@ -129,7 +129,7 @@ def main():
     # Blit everything to the screen
     screen.blit(background, (0, 0))
     draw_snake(snake, screen)
-    pygame.draw.rect(screen, (0, 0, 0), food.rect)
+    pygame.draw.rect(screen, (255, 0, 0), food.rect)
     pygame.display.update()
 
     # Set up local variables
@@ -159,7 +159,7 @@ def main():
                 if end:
                     if event.key == K_q:
                         return
-                    if event.key == K_c:
+                    if event.key == K_p:
                         snake = Node(background.get_rect().centerx, background.get_rect().centery, None)
                         length = 1
                         food = Food()
@@ -176,7 +176,7 @@ def main():
                 print("hit")
             screen.blit(background, (0, 0))
             draw_snake(snake, screen)
-            pygame.draw.rect(screen, (0, 0, 0), food.rect)
+            pygame.draw.rect(screen, (255, 0, 0), food.rect)
         elif end:
             start = False
             show_quit(screen)
